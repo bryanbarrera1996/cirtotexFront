@@ -1,25 +1,17 @@
-import logo from './logo.svg';
-import './App.css';
-
-function App() {
+import { Provider } from 'react-redux';
+import { ThemeProvider } from "@mui/material";
+import { AppRouter } from "./routers/AppRouter";
+import { theme } from './styles/configTheme';
+import { store } from './redux/store/store';
+export const App = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        <AppRouter />
+      </ThemeProvider>
+    </Provider>
+
+  )
 }
 
 export default App;
