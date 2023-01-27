@@ -4,10 +4,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import { useEffect, useState } from 'react';
-import { postProducts, uploadImage } from '../../services/productService';
+import { patchProducts, postProducts, uploadImage } from '../../services/productService';
 import { useSelector } from 'react-redux';
-const allowedExtensions = ["jpg", "png", "jpeg","webp"];
-export const FormProduct = ({ open = false, setOpen }) => {
+const allowedExtensions = ["jpg", "png", "jpeg", "webp"];
+export const FormProduct = ({ open = false, setOpen, title, product }) => {
     const { token } = useSelector((selector) => selector.auth) || sessionStorage.getItem('access_token');
     const closeDrawer = () => {
         setOpen(false);
@@ -19,41 +19,65 @@ export const FormProduct = ({ open = false, setOpen }) => {
     const handleSubmit = (event) => {
         const data = new FormData(event.currentTarget);
         event.preventDefault();
-        if (!!selectedFile) {
-            if (!data.get('nameProduct') || !data.get('inventory') || !data.get('description')) {
-                alert('Los campos con * son obligatorios');
-                return false;
-            }
+        if (!data.get('nameProduct') || !data.get('inventory') || !data.get('description')) {
+            alert('Los campos con * son obligatorios');
+            return false;
+        }
 
+        if (!!product.id) {
+            editProduct({
+                id: product.id,
+                nameProduct: data.get('nameProduct'),
+                inventory: data.get('inventory'),
+                description: data.get('description') || ''
+            })
+        } else {
+            createProduct({
+                nameProduct: data.get('nameProduct'),
+                inventory: data.get('inventory'),
+                description: data.get('description') || ''
+            });
+        }
+    };
+
+    const createProduct = (data) => {
+        if (!!selectedFile) {
             uploadImage(token, selectedFile).then((response) => {
                 if (!!response.fileName) {
                     const payload = {
-                        nameProduct: data.get('nameProduct'),
-                        inventory: data.get('inventory'),
-                        description: data.get('description') || '',
+                        nameProduct: data['nameProduct'],
+                        inventory: data['inventory'],
+                        description: data['description'] || '',
                         imagePath: response.fileName
                     }
                     postProducts(token, payload).then((response) => {
                         if (response) {
                             alert('Producto registrado');
                             window.location.reload();
-                        } else{
+                        } else {
                             alert('Ha ocurrido un error');
                         }
 
                     })
-                } else{
+                } else {
                     alert('Ha ocurrido un error');
                 }
             });
         } else {
             alert('Debes subir una imagen');
         }
+    }
 
-
-
-
-    };
+    const editProduct = (data) => {
+        patchProducts(token, data).then((response) => {
+            if (response) {
+                alert('Producto actualizado');
+                window.location.reload();
+            } else {
+                alert('Ha ocurrido un error');
+            }
+        })
+    }
     useEffect(() => {
         if (!!selectedFile) {
             setColorCamera('success');
@@ -127,7 +151,7 @@ export const FormProduct = ({ open = false, setOpen }) => {
                         <ShoppingCartIcon />
                     </Avatar>
                     <Typography component="h1" variant="h5">
-                        Registrar productos
+                        {title}
                     </Typography>
                     <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
                         <Grid container spacing={2}>
@@ -140,6 +164,7 @@ export const FormProduct = ({ open = false, setOpen }) => {
                                     label="Nombre del producto"
                                     name="nameProduct"
                                     autoFocus
+                                    defaultValue={!!product.id ? product.productName : ''}
                                 />
                             </Grid>
                             <Grid item sm={8} md={4}>
@@ -151,6 +176,7 @@ export const FormProduct = ({ open = false, setOpen }) => {
                                     label="Cantidad"
                                     type="number"
                                     id="inventory"
+                                    defaultValue={!!product.id ? product.inventory : ''}
                                 />
                             </Grid>
                             <Grid item sm={4} md={2}>
@@ -160,12 +186,15 @@ export const FormProduct = ({ open = false, setOpen }) => {
                                     alignItems="center"
                                     spacing={2}
                                 >
-                                    <IconButton color="primary" aria-label="upload picture" component="label">
-                                        <input hidden accept="csv/*" type="file"
-                                            onChange={handleFileChange}
-                                        />
-                                        <AddAPhotoIcon color={(error) ? 'error' : colorCamera} />
-                                    </IconButton>
+                                    {
+                                        !product.id && <IconButton color="primary" aria-label="upload picture" component="label">
+                                            <input hidden accept="csv/*" type="file"
+                                                onChange={handleFileChange}
+                                            />
+                                            <AddAPhotoIcon color={(error) ? 'error' : colorCamera} />
+                                        </IconButton>
+                                    }
+
                                 </Stack>
                             </Grid>
                             <Grid item sm={12} md={12} lg={12}>
@@ -180,6 +209,7 @@ export const FormProduct = ({ open = false, setOpen }) => {
                                     rows={4}
                                     id="description"
                                     name="description"
+                                    defaultValue={!!product.id ? product.description : ''}
                                 />
                             </Grid>
                         </Grid>
@@ -195,7 +225,7 @@ export const FormProduct = ({ open = false, setOpen }) => {
                             sx={{ mt: 3, mb: 2 }}
 
                         >
-                            Registrar
+                            {!product.id ? 'Registrar' : 'Editar'}
                         </Button>
                     </Box>
                 </Box>
